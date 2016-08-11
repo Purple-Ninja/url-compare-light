@@ -1,0 +1,139 @@
+<html>
+<head>
+	<style type="text/css">
+		.w100, table {
+			width: 1200px;
+		}
+		.w50 {
+			width: 600px;
+		}
+		table {
+			table-layout: fixed;
+		}
+		table td {
+			overflow: hidden;
+		}
+		.nodiff {
+			color: #AAA;
+		}
+		.diff {
+			background-color: #F55;
+		}
+		.subdiff {
+			background-color: #FAA;
+		}
+		.col {
+			display: table-cell;
+		}
+	</style>
+</head>
+<body>
+	<div id="input" class="w100">
+		<div class="col">
+			<textarea id="iA" class="w50"></textarea>
+		</div>
+		<div class="col">
+			<textarea id="iB" class="w50"></textarea>
+		</div>
+	</div>
+	<div id="output">
+	</div>
+</body>
+<script>
+(function(){
+	var a = document.getElementById("iA"),
+		b = document.getElementById("iB");
+	var update = function() {
+		var output = document.getElementById("output");
+		var result = compare_urls(parse(a.value), parse(b.value));
+		var table = document.createElement('table');
+		output.innerHTML = '';
+		(result || []).forEach(function(row){
+			var tr = table.insertRow();
+			tr.insertCell(0).innerHTML = row.label;
+			tr.insertCell(1).innerHTML = row.a || '';
+			tr.insertCell(2).innerHTML = row.b || '';
+			if (row.diff === '===') {
+				tr.setAttribute('class', 'nodiff');
+			} else if (row.diff === '!==') {
+				tr.setAttribute('class', 'diff');
+			} else if (row.diff === '>') {
+				tr.cells[1].setAttribute('class', 'subdiff');
+			} else if (row.diff === '<') {
+				tr.cells[2].setAttribute('class', 'subdiff');
+			}
+		});
+		output.appendChild(table);
+	};
+	a.addEventListener('change', update);
+	b.addEventListener('change', update);
+})();
+</script>
+<script>
+var compare_urls = function (urlA, urlB) {
+	console.log('Compare', urlA, urlB);
+	var rows = [];
+	var diff = function (a, b) {
+		if (!a && b) {
+			return '<';
+		} else if (a && !b) {
+			return '>';
+		} else if (a === b) {
+			return '===';
+		}
+		return '!==';
+	};
+	if (!urlA && !urlB) {
+		return rows;
+	}
+	['scheme', 'host', 'path'].forEach(function(key){
+		rows.push({
+			label: key,
+			a: urlA[key],
+			b: urlB[key],
+			diff: diff(urlA[key], urlB[key])
+		});
+	});
+
+	// union of params
+	var params = {};
+	Object.keys(urlA.params || {}).concat(Object.keys(urlB.params || {})).sort().map(function(t){
+		params[t] = 1;
+	});
+	Object.keys(params).forEach(function(key){
+		var a = urlA.params || {}, b = urlB.params || {};
+		if( key === 'bingLang'){
+			console.log('bingLang', key, a[key], b[key], diff(a[key], b[key]));
+		}
+		rows.push({
+			label: key,
+			a: a[key],
+			b: b[key],
+			diff: diff(a[key], b[key])
+		});
+	});
+	return rows;
+};
+var parse = function (url) {
+	var scheme = url.substring(0, url.indexOf('://'));
+	var host = url.substring(scheme.length+3, url.indexOf('/', scheme.length+3));
+	var path = url.substring(scheme.length + host.length + 4, url.indexOf('?'));
+	var params = url.substring(url.indexOf('?')+1).split('&');
+	var param_map = {};
+	params.forEach(function(t){
+		var ts = t.split('=');
+		if (ts.length == 2) {
+			param_map[ts[0]] = ts[1];
+		}else if(ts.length == 1) {
+			param_map[ts[0]] = null;
+		}
+	});
+	return {
+		scheme: scheme,
+		host: host,
+		path: path,
+		params: param_map
+	};
+};
+</script>
+</html>
