@@ -102,9 +102,6 @@ var compare_urls = function (urlA, urlB) {
 	});
 	Object.keys(params).forEach(function(key){
 		var a = urlA.params || {}, b = urlB.params || {};
-		if( key === 'bingLang'){
-			console.log('bingLang', key, a[key], b[key], diff(a[key], b[key]));
-		}
 		rows.push({
 			label: key,
 			a: a[key],
